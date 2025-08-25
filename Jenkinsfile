@@ -42,11 +42,6 @@ pipeline {
                                 sudo cp -r /tmp/dist/* /var/www/html/
                                 sudo chown -R www-data:www-data /var/www/html/
                             '
-
-                            # Restart backend
-                            ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} '
-                                cd /home/ubuntu/backend && git pull && npm install && pm2 restart all
-                            '
                         """
                     }
                 }
