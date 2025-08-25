@@ -33,11 +33,13 @@ pipeline {
                         sh """
                             chmod 600 ${SSH_KEY_FILE}
 
-                            # Sync dist directly into /var/www/html
-                            rsync -avz -e 'ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no' dist/ ${EC2_USER}@${EC2_HOST}:/var/www/html/
+                            # Sync into a temporary folder first
+                            rsync -avz -e 'ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no' dist/ ${EC2_USER}@${EC2_HOST}:/tmp/dist/
 
-                            # Ensure correct ownership/permissions
+                            # Move files with sudo
                             ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} '
+                                sudo rm -rf /var/www/html/*
+                                sudo cp -r /tmp/dist/* /var/www/html/
                                 sudo chown -R www-data:www-data /var/www/html/
                             '
 
@@ -50,5 +52,6 @@ pipeline {
                 }
             }
         }
+
     }
 }
