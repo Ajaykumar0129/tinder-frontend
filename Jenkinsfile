@@ -20,7 +20,9 @@ pipeline {
                 sh '''
                         node --version
                         npm install
+
                         npm run build
+                        ls -lah frontend/dist || echo "dist folder not found"
                     '''
             }
         }
