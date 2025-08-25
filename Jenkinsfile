@@ -26,17 +26,18 @@ pipeline {
         }
         
         stage('Deploy to EC2') {
-                steps {
-                    script {
-                        sshagent(['ec2-ssh-key']) {
-                            // First, test SSH connection
-                            sh "ssh -o StrictHostKeyChecking=no -v ${EC2_USER}@${EC2_HOST} 'echo SSH connection successful!'"
-                            
-                            // If above works, then run rsync
-                            sh "rsync -avz -e 'ssh -o StrictHostKeyChecking=no' frontend/dist/ ${EC2_USER}@${EC2_HOST}:/var/www/html/"
-                        }
+            steps {
+                script {
+                    // Write the SSH key to a temporary file
+                    withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
+                        sh """
+                            chmod 600 ${SSH_KEY_FILE}
+                            rsync -avz -e 'ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no' frontend/dist/ ${EC2_USER}@${EC2_HOST}:/var/www/html/
+                            ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} 'cd /home/ubuntu/backend && git pull && npm install && pm2 restart all'
+                        """
                     }
                 }
+            }
         }
     }
 }
