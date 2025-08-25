@@ -18,12 +18,11 @@ pipeline {
                 // Install required tools in the container
                 sh 'apk add --no-cache rsync openssh-client'
                 sh '''
-                        node --version
-                        npm install
-
-                        npm run build
-                        ls -lah frontend/dist || echo "dist folder not found"
-                    '''
+                    node --version
+                    npm install
+                    npm run build
+                    ls -lah dist || echo "dist folder not found"
+                '''
             }
         }
         
@@ -33,15 +32,19 @@ pipeline {
                     withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
                         sh """
                             chmod 600 ${SSH_KEY_FILE}
-                            rsync -avz -e 'ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no' frontend/dist/ ${EC2_USER}@${EC2_HOST}:/tmp/dist/
-                            # Then move with sudo privileges
+
+                            # Sync dist directly into /var/www/html
+                            rsync -avz -e 'ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no' dist/ ${EC2_USER}@${EC2_HOST}:/var/www/html/
+
+                            # Ensure correct ownership/permissions
                             ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} '
-                                sudo rm -rf /var/www/html/*
-                                sudo cp -r /tmp/dist/* /var/www/html/
                                 sudo chown -R www-data:www-data /var/www/html/
                             '
+
                             # Restart backend
-                            ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} 'cd /home/ubuntu/backend && git pull && npm install && pm2 restart all'
+                            ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} '
+                                cd /home/ubuntu/backend && git pull && npm install && pm2 restart all
+                            '
                         """
                     }
                 }
