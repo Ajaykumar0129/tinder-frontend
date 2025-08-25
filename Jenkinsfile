@@ -28,11 +28,18 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 script {
-                    // Write the SSH key to a temporary file
                     withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
                         sh """
                             chmod 600 ${SSH_KEY_FILE}
-                            rsync -avz -e 'ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no' frontend/dist/ ${EC2_USER}@${EC2_HOST}:/var/www/html/
+                            # Copy to temp location first
+                            rsync -avz -e 'ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no' frontend/dist/ ${EC2_USER}@${EC2_HOST}:/tmp/dist/
+                            # Then move with sudo privileges
+                            ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} '
+                                sudo rm -rf /var/www/html/*
+                                sudo cp -r /tmp/dist/* /var/www/html/
+                                sudo chown -R www-data:www-data /var/www/html/
+                            '
+                            # Restart backend
                             ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} 'cd /home/ubuntu/backend && git pull && npm install && pm2 restart all'
                         """
                     }
