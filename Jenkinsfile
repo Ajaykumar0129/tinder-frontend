@@ -31,7 +31,6 @@ pipeline {
                     withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
                         sh """
                             chmod 600 ${SSH_KEY_FILE}
-                            # Copy to temp location first
                             rsync -avz -e 'ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no' frontend/dist/ ${EC2_USER}@${EC2_HOST}:/tmp/dist/
                             # Then move with sudo privileges
                             ssh -i ${SSH_KEY_FILE} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} '
