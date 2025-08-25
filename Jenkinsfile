@@ -11,6 +11,7 @@ pipeline {
                 docker {
                     image 'node:22-alpine'
                     reuseNode true
+                    args '-u root:root'
                 }
             }
             steps {
@@ -28,7 +29,7 @@ pipeline {
             steps {
                 script {
                     // Use ssh-agent for better security
-                    sshagent(['ec2-ssh-key']) {
+                    
                         // Transfer built files to EC2
                         sh "rsync -avz -e 'ssh -o StrictHostKeyChecking=no' frontend/dist/ ${EC2_USER}@${EC2_HOST}:/var/www/html/"
                         
