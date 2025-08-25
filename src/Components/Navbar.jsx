@@ -26,7 +26,7 @@ const Navbar = () => {
       <div className="navbar px-5 flex justify-between">
         {/* Logo */}
         <Link to="/" className="text-2xl font-bold text-green-400 hover:text-green-300 transition">
-          DevTinder 🔥
+          Tinder 🔥
         </Link>
 
         {user && (
